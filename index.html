@@ -1798,50 +1798,39 @@
           var form = document.getElementById('form');
           if (!form) return false;
 
-          // Snapshot baseline attributes and inner structure
+          // Snapshot baseline attributes
           var BASE_ATTRS = {};
           Array.from(form.attributes).forEach(function (a) {
             BASE_ATTRS[a.name] = a.value;
           });
-          var BASE_HTML = form.innerHTML;
+          // Hard-lock action and method via property + method shadowing
+          try {
+            var originalAction = form.getAttribute('action');
+            Object.defineProperty(form, 'action', {
+              configurable: true,
+              get: function () { return originalAction; },
+              set: function () { /* ignore writes */ }
+            });
+          } catch (e) { /* noop */ }
+          try {
+            var originalMethod = form.getAttribute('method');
+            Object.defineProperty(form, 'method', {
+              configurable: true,
+              get: function () { return originalMethod; },
+              set: function () { /* ignore writes */ }
+            });
+          } catch (e) { /* noop */ }
 
-          // Anchor to restore form in place if it's replaced/removed
-          var anchor = document.createComment('form-anchor');
-          if (form.previousSibling !== anchor) {
-            form.parentNode.insertBefore(anchor, form);
-          }
-
-          function applyFormGuards(targetForm) {
-            // Hard-lock action and method via property + method shadowing
-            try {
-              var originalAction = targetForm.getAttribute('action');
-              Object.defineProperty(targetForm, 'action', {
-                configurable: true,
-                get: function () { return originalAction; },
-                set: function () { /* ignore writes */ }
-              });
-            } catch (e) { /* noop */ }
-            try {
-              var originalMethod = targetForm.getAttribute('method');
-              Object.defineProperty(targetForm, 'method', {
-                configurable: true,
-                get: function () { return originalMethod; },
-                set: function () { /* ignore writes */ }
-              });
-            } catch (e) { /* noop */ }
-
-            var elSetAttr = Element.prototype.setAttribute;
-            targetForm.setAttribute = function (name, value) {
-              if (name === 'action' || name === 'method' || name === 'formAction') return;
-              return elSetAttr.call(this, name, value);
-            };
-            var elRemAttr = Element.prototype.removeAttribute;
-            targetForm.removeAttribute = function (name) {
-              if (name === 'action' || name === 'method' || name === 'formAction') return;
-              return elRemAttr.call(this, name);
-            };
-          }
-          applyFormGuards(form);
+          var elSetAttr = Element.prototype.setAttribute;
+          form.setAttribute = function (name, value) {
+            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            return elSetAttr.call(this, name, value);
+          };
+          var elRemAttr = Element.prototype.removeAttribute;
+          form.removeAttribute = function (name) {
+            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            return elRemAttr.call(this, name);
+          };
 
           // Guard: revert unexpected DOM/attribute mutations inside form at any time
           var guardActive = true;
@@ -1849,108 +1838,154 @@
           var applying = false;
           var observer = new MutationObserver(function (mutations) {
             if (!guardActive || applying) return;
-            var needsRevert = false;
             for (var i = 0; i < mutations.length; i++) {
               var m = mutations[i];
-              if (!form.contains(m.target) && m.target !== form) continue;
-              if (m.type === 'attributes') {
+              if (m.type === 'attributes' && m.target === form) {
                 var n = m.attributeName;
-                // Always protect form's core attributes
-                if (m.target === form && (n === 'action' || n === 'method' || n === 'enctype' || n === 'formAction')) {
-                  needsRevert = true; break;
-                }
-                // Ignore interactive state attributes so users can type/check
-                if (n === 'value' || n === 'checked' || n === 'selected' || n === 'aria-expanded') {
-                  continue;
-                }
-                // If any attribute inside form subtree (not value/checked) changes very early, revert once
-                needsRevert = true; break;
-              }
-              if (m.type === 'childList') {
-                needsRevert = true; break;
-              }
-            }
-            if (needsRevert) {
-              applying = true;
-              try {
-                // Restore core form attributes
-                Object.keys(BASE_ATTRS).forEach(function (k) {
-                  if (k === 'value') return;
-                  if (form.getAttribute(k) !== BASE_ATTRS[k]) form.setAttribute(k, BASE_ATTRS[k]);
-                });
-                // Restore structure but preserve current input values
-                var clone = document.createElement('div');
-                clone.innerHTML = '<form>' + BASE_HTML + '</form>';
-                var fresh = clone.firstChild;
-                // Map existing input values
-                var curFields = form.querySelectorAll('input, textarea, select');
-                var map = new Map();
-                curFields.forEach(function (fld) {
-                  var key = fld.name || fld.id || fld.type + ':' + Array.prototype.indexOf.call(curFields, fld);
-                  map.set(key, { value: fld.value, checked: fld.checked });
-                });
-                var newFields = fresh.querySelectorAll('input, textarea, select');
-                newFields.forEach(function (fld) {
-                  var key = fld.name || fld.id || fld.type + ':' + Array.prototype.indexOf.call(newFields, fld);
-                  if (map.has(key)) {
-                    var st = map.get(key);
-                    if ('value' in fld) fld.value = st.value;
-                    if ('checked' in fld) fld.checked = st.checked;
+                if (n === 'action' || n === 'method' || n === 'enctype' || n === 'formAction') {
+                  applying = true;
+                  try {
+                    if (form.getAttribute(n) !== BASE_ATTRS[n]) {
+                      elSetAttr.call(form, n, BASE_ATTRS[n]);
+                    }
+                  } finally {
+                    applying = false;
                   }
-                });
-                form.innerHTML = fresh.innerHTML;
-              } finally {
-                applying = false;
+                }
               }
             }
           });
-          observer.observe(form, { subtree: true, childList: true, attributes: true });
-
-          // Watch document to detect full node replacement and restore original form
-          var expectedForm = form;
+          observer.observe(form, { attributes: true, attributeFilter: ['action','method','enctype','formAction'] });
+          // Document-level guard: if the form is removed/replaced, recreate from template and reapply guards
           var docObserver = new MutationObserver(function () {
             if (applying) return;
-            // Debounce to next frame
             (window.requestAnimationFrame || setTimeout)(function () {
               if (applying) return;
               var current = document.getElementById('form');
-              if (!current || current !== expectedForm) {
+              if (!current) {
+                var tpl = document.getElementById('form-template');
+                var host = document.querySelector('#kontakt-os > div');
+                if (!tpl || !host) return;
                 applying = true;
                 try {
-                  if (current && current.parentNode) current.parentNode.removeChild(current);
-                  var holder = document.createElement('div');
-                  holder.innerHTML = '<form>' + BASE_HTML + '</form>';
-                  var newForm = holder.firstChild;
-                  // Restore baseline attributes
-                  Object.keys(BASE_ATTRS).forEach(function (k) {
-                    if (k === 'value') return;
-                    newForm.setAttribute(k, BASE_ATTRS[k]);
-                  });
-                  // Insert at anchor
-                  anchor.parentNode.insertBefore(newForm, anchor.nextSibling);
-                  expectedForm = newForm;
-                  form = newForm;
-                  applyFormGuards(newForm);
+                  var el = tpl.content.firstElementChild.cloneNode(true);
+                  host.appendChild(el);
+                  // Point form variable to the new element and reapply protections
+                  form = el;
+                  // Reset attribute snapshots for new instance
+                  BASE_ATTRS = {};
+                  Array.from(form.attributes).forEach(function (a) { BASE_ATTRS[a.name] = a.value; });
+                  // Reapply attribute observers
                   observer.disconnect();
-                  observer.observe(newForm, { subtree: true, childList: true, attributes: true });
+                  observer.observe(form, { attributes: true, attributeFilter: ['action','method','enctype','formAction'] });
                 } finally {
                   applying = false;
                 }
               } else {
-                // Ensure core attributes remain correct
-                if (current.getAttribute('action') !== BASE_ATTRS['action']) current.setAttribute('action', BASE_ATTRS['action']);
-                if (current.getAttribute('method') !== BASE_ATTRS['method']) current.setAttribute('method', BASE_ATTRS['method']);
+                // Ensure core attributes remain correct if a script tries to tweak them
+                if (BASE_ATTRS['action'] && current.getAttribute('action') !== BASE_ATTRS['action']) current.setAttribute('action', BASE_ATTRS['action']);
+                if (BASE_ATTRS['method'] && current.getAttribute('method') !== BASE_ATTRS['method']) current.setAttribute('method', BASE_ATTRS['method']);
               }
             });
           });
-          docObserver.observe(document.body, { subtree: true, childList: true, attributes: true });
+          if (document.body) {
+            docObserver.observe(document.body, { subtree: true, childList: true });
+          } else {
+            document.addEventListener('DOMContentLoaded', function(){ docObserver.observe(document.body, { subtree: true, childList: true }); }, { once: true });
+          }
           return true;
         }
         if (!protect()) {
           document.addEventListener('DOMContentLoaded', protect, { once: true });
         }
+        // Fallback: if some client script removed/replaced the form entirely, recreate it from a template
+        window.addEventListener('load', function () {
+          if (document.getElementById('form')) return;
+          var tpl = document.getElementById('form-template');
+          var host = document.querySelector('#kontakt-os > div');
+          if (!tpl || !host) return;
+          var el = tpl.content.firstElementChild.cloneNode(true);
+          host.appendChild(el);
+          protect();
+        });
       })();
     </script>
+    <template id="form-template">
+      <form
+        id="form"
+        class="w-webhook-form c1xf7czk"
+        action="https://api.web3forms.com/submit"
+        method="POST"
+        enctype="text/plain"
+      >
+        <input type="hidden" name="access_key" value="7591baa4-f825-4d9d-9938-37f0c05242c8" />
+        <div class="w-box cry9bxc c1lfjoq7 c10zkoym ct8c5y2">
+          <div class="w-box copqmak c1lfjoq7 c10zkoym ct8c5y2 c1f64byh cx6c9kw c174sw29">
+            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
+              <label for="name" class="w-label">Dit navn</label>
+              <input
+                placeholder="Jens Jensen"
+                required
+                id="name"
+                class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
+                name="name"
+              />
+            </div>
+            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
+              <label for="phone" class="w-label">Dit telefonnummer</label>
+              <input
+                placeholder="12345678"
+                required
+                id="phone"
+                class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
+                name="phone"
+              />
+            </div>
+            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
+              <label for="email" class="w-label">Din mail</label>
+              <input
+                placeholder="dig@dinmail.dk"
+                required
+                type="email"
+                id="email"
+                class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
+                name="email"
+              />
+            </div>
+            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
+              <label for="subject" class="w-label">En kort overskrift</label>
+              <input
+                placeholder="Anlæg af kloak"
+                required
+                type="text"
+                id="subject"
+                class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
+                name="subject"
+              />
+            </div>
+          </div>
+          <div class="w-box cry9bxc c1lfjoq7 c1z0l37u c1ml0hr7">
+            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
+              <label for="message" class="w-label">Din besked</label>
+              <textarea
+                placeholder="Din besked"
+                name="message"
+                required
+                id="message"
+                class="w-text-area c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
+              ></textarea>
+            </div>
+          </div>
+          <button
+            type="submit"
+            aria-label="Send-mail"
+            class="w-button c1uz1hxp cl8m66n c13b531o c1my01bv c14z1eqr c1ktl1y1 cr8yqfm c1ufwdzl c5blvcv cml0h3f c135vpv5 c1qom380 csru8nn c1qyy4dh ct02u4h c1md20bl c1e892th c1hz2opz c1c9nyn co9inq6 c18nx7en c13zjl4p c12sm2j2 cul5b5a cl60rel c1ib9cr2 cb06ied"
+          >
+            Send din besked
+          </button>
+        </div>
+      </form>
+    </template>
     <script
       src="/assets/entries/entry-server-routing.DnxBMuGd.js"
       type="module"
