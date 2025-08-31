@@ -1146,9 +1146,10 @@
               class="w-webhook-form c1xf7czk"
               action="https://api.web3forms.com/submit"
               method="POST"
-              enctype="text/plain"
             >
             <input type="hidden" name="access_key" value="7591baa4-f825-4d9d-9938-37f0c05242c8" />
+            <input type="hidden" name="subject" value="New Submission from Web3Forms" />
+            <input type="hidden" name="redirect" value="https://web3forms.com/success" />
               <div class="w-box cry9bxc c1lfjoq7 c10zkoym ct8c5y2">
                 <div
                   class="w-box copqmak c1lfjoq7 c10zkoym ct8c5y2 c1f64byh cx6c9kw c174sw29"
@@ -1190,20 +1191,7 @@
                       name="email"
                     />
                   </div>
-                  <div
-                    class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel"
-                  >
-                    <label for="subject" class="w-label"
-                      >En kort overskrift</label
-                    ><input
-                      placeholder="Anlæg af kloak"
-                      required=""
-                      type="text"
-                      id="subject"
-                      class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
-                      name="subject"
-                    />
-                  </div>
+                  
                 </div>
                 <div class="w-box cry9bxc c1lfjoq7 c1z0l37u c1ml0hr7">
                   <div
@@ -1855,7 +1843,7 @@
               }
             }
           });
-          observer.observe(form, { attributes: true, attributeFilter: ['action','method','enctype','formAction'] });
+          observer.observe(form, { attributes: true, attributeFilter: ['action','method','formAction'] });
           // Document-level guard: if the form is removed/replaced, recreate from template and reapply guards
           var docObserver = new MutationObserver(function () {
             if (applying) return;
@@ -1916,9 +1904,10 @@
         class="w-webhook-form c1xf7czk"
         action="https://api.web3forms.com/submit"
         method="POST"
-        enctype="text/plain"
       >
         <input type="hidden" name="access_key" value="7591baa4-f825-4d9d-9938-37f0c05242c8" />
+        <input type="hidden" name="subject" value="New Submission from Web3Forms" />
+        <input type="hidden" name="redirect" value="https://web3forms.com/success" />
         <div class="w-box cry9bxc c1lfjoq7 c10zkoym ct8c5y2">
           <div class="w-box copqmak c1lfjoq7 c10zkoym ct8c5y2 c1f64byh cx6c9kw c174sw29">
             <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
@@ -1952,17 +1941,7 @@
                 name="email"
               />
             </div>
-            <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
-              <label for="subject" class="w-label">En kort overskrift</label>
-              <input
-                placeholder="Anlæg af kloak"
-                required
-                type="text"
-                id="subject"
-                class="w-text-input c1a8d7ts c1b2tb9q c122t6uk c1xm4ef6 ccfzz03 cub2gss cgcvr98 c1xjllne c1932brm cg5i74l c1e3v5m0 cl60rel c2zsigv c1qcsrcr cqgzh32"
-                name="subject"
-              />
-            </div>
+            
           </div>
           <div class="w-box cry9bxc c1lfjoq7 c1z0l37u c1ml0hr7">
             <div class="w-box cry9bxc c1778y6x c1wt8a7g c1lfjoq7 c1md20bl c1e892th c1482uel">
