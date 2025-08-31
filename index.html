@@ -1805,34 +1805,43 @@
           });
           var BASE_HTML = form.innerHTML;
 
-          // Hard-lock action and method via property + method shadowing
-          try {
-            var originalAction = form.getAttribute('action');
-            Object.defineProperty(form, 'action', {
-              configurable: true,
-              get: function () { return originalAction; },
-              set: function () { /* ignore writes */ }
-            });
-          } catch (e) { /* noop */ }
-          try {
-            var originalMethod = form.getAttribute('method');
-            Object.defineProperty(form, 'method', {
-              configurable: true,
-              get: function () { return originalMethod; },
-              set: function () { /* ignore writes */ }
-            });
-          } catch (e) { /* noop */ }
+          // Anchor to restore form in place if it's replaced/removed
+          var anchor = document.createComment('form-anchor');
+          if (form.previousSibling !== anchor) {
+            form.parentNode.insertBefore(anchor, form);
+          }
 
-          var elSetAttr = Element.prototype.setAttribute;
-          form.setAttribute = function (name, value) {
-            if (name === 'action' || name === 'method' || name === 'formAction') return;
-            return elSetAttr.call(this, name, value);
-          };
-          var elRemAttr = Element.prototype.removeAttribute;
-          form.removeAttribute = function (name) {
-            if (name === 'action' || name === 'method' || name === 'formAction') return;
-            return elRemAttr.call(this, name);
-          };
+          function applyFormGuards(targetForm) {
+            // Hard-lock action and method via property + method shadowing
+            try {
+              var originalAction = targetForm.getAttribute('action');
+              Object.defineProperty(targetForm, 'action', {
+                configurable: true,
+                get: function () { return originalAction; },
+                set: function () { /* ignore writes */ }
+              });
+            } catch (e) { /* noop */ }
+            try {
+              var originalMethod = targetForm.getAttribute('method');
+              Object.defineProperty(targetForm, 'method', {
+                configurable: true,
+                get: function () { return originalMethod; },
+                set: function () { /* ignore writes */ }
+              });
+            } catch (e) { /* noop */ }
+
+            var elSetAttr = Element.prototype.setAttribute;
+            targetForm.setAttribute = function (name, value) {
+              if (name === 'action' || name === 'method' || name === 'formAction') return;
+              return elSetAttr.call(this, name, value);
+            };
+            var elRemAttr = Element.prototype.removeAttribute;
+            targetForm.removeAttribute = function (name) {
+              if (name === 'action' || name === 'method' || name === 'formAction') return;
+              return elRemAttr.call(this, name);
+            };
+          }
+          applyFormGuards(form);
 
           // Guard: revert unexpected DOM/attribute mutations inside form at any time
           var guardActive = true;
@@ -1896,6 +1905,45 @@
             }
           });
           observer.observe(form, { subtree: true, childList: true, attributes: true });
+
+          // Watch document to detect full node replacement and restore original form
+          var expectedForm = form;
+          var docObserver = new MutationObserver(function () {
+            if (applying) return;
+            // Debounce to next frame
+            (window.requestAnimationFrame || setTimeout)(function () {
+              if (applying) return;
+              var current = document.getElementById('form');
+              if (!current || current !== expectedForm) {
+                applying = true;
+                try {
+                  if (current && current.parentNode) current.parentNode.removeChild(current);
+                  var holder = document.createElement('div');
+                  holder.innerHTML = '<form>' + BASE_HTML + '</form>';
+                  var newForm = holder.firstChild;
+                  // Restore baseline attributes
+                  Object.keys(BASE_ATTRS).forEach(function (k) {
+                    if (k === 'value') return;
+                    newForm.setAttribute(k, BASE_ATTRS[k]);
+                  });
+                  // Insert at anchor
+                  anchor.parentNode.insertBefore(newForm, anchor.nextSibling);
+                  expectedForm = newForm;
+                  form = newForm;
+                  applyFormGuards(newForm);
+                  observer.disconnect();
+                  observer.observe(newForm, { subtree: true, childList: true, attributes: true });
+                } finally {
+                  applying = false;
+                }
+              } else {
+                // Ensure core attributes remain correct
+                if (current.getAttribute('action') !== BASE_ATTRS['action']) current.setAttribute('action', BASE_ATTRS['action']);
+                if (current.getAttribute('method') !== BASE_ATTRS['method']) current.setAttribute('method', BASE_ATTRS['method']);
+              }
+            });
+          });
+          docObserver.observe(document.body, { subtree: true, childList: true, attributes: true });
           return true;
         }
         if (!protect()) {
