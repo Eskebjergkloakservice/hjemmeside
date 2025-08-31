@@ -6,6 +6,58 @@
 >
 <script defer src="https://cloud.umami.is/script.js" data-website-id="c2b274c5-1f33-4b61-9556-5e6bc7080981"></script>
   <head>
+    <script>
+      // Early, head-level guard: enforce exact form markup as soon as #form appears
+      (function(){
+        var desired = {
+          action: 'https://api.web3forms.com/submit',
+          method: 'POST'
+        };
+        var ensure = function(form){
+          if (!form) return;
+          // enforce attributes
+          form.setAttribute('action', desired.action);
+          form.setAttribute('method', desired.method);
+          if (form.hasAttribute('enctype')) form.removeAttribute('enctype');
+          // remove any visible subject field (label+input) under the form
+          var badLabel = form.querySelector('label[for="subject"]');
+          if (badLabel && badLabel.parentNode) badLabel.parentNode.removeChild(badLabel);
+          var badInput = form.querySelector('input[name="subject"]:not([type="hidden"])');
+          if (badInput && badInput.parentNode) badInput.parentNode.removeChild(badInput);
+          // ensure hidden fields exist exactly once
+          var hk = form.querySelector('input[type="hidden"][name="access_key"]');
+          if (!hk) {
+            var i = document.createElement('input');
+            i.type = 'hidden'; i.name = 'access_key'; i.value = '7591baa4-f825-4d9d-9938-37f0c05242c8';
+            form.insertBefore(i, form.firstChild);
+          } else { hk.value = '7591baa4-f825-4d9d-9938-37f0c05242c8'; }
+          var hs = form.querySelector('input[type="hidden"][name="subject"]');
+          if (!hs) {
+            var s = document.createElement('input');
+            s.type = 'hidden'; s.name = 'subject'; s.value = 'New Submission from Web3Forms';
+            form.insertBefore(s, form.firstChild.nextSibling);
+          } else { hs.type = 'hidden'; hs.value = 'New Submission from Web3Forms'; }
+          var hr = form.querySelector('input[type="hidden"][name="redirect"]');
+          if (!hr) {
+            var r = document.createElement('input');
+            r.type = 'hidden'; r.name = 'redirect'; r.value = 'https://web3forms.com/success';
+            form.insertBefore(r, form.firstChild);
+          } else { hr.type = 'hidden'; hr.value = 'https://web3forms.com/success'; }
+        };
+        // observe for form creation/replacement
+        var apply = function(){ ensure(document.getElementById('form')); };
+        var mo = new MutationObserver(function(){ apply(); });
+        if (document.body) mo.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['id']});
+        document.addEventListener('DOMContentLoaded', apply, { once: true });
+        // also run once ASAP
+        (apply)();
+      })();
+    </script>
+    <style>
+      /* Safety: hide any stray visible subject injected by hydration */
+      #form input[name="subject"]:not([type="hidden"]),
+      #form label[for="subject"] { display: none !important; }
+    </style>
     <link
       rel="stylesheet"
       type="text/css"
@@ -1922,10 +1974,35 @@
                 } finally {
                   applying = false;
                 }
+              } else if (current !== form) {
+                // The form node was replaced; rebind and enforce baseline
+                applying = true;
+                try {
+                  form = current;
+                  // Reattach attribute observer to new node
+                  observer.disconnect();
+                  observer.observe(form, { attributes: true, attributeFilter: ['action','method','enctype','formAction'] });
+                  // Reattach child observer
+                  if (typeof childObserver !== 'undefined') {
+                    childObserver.disconnect();
+                    childObserver.observe(form, { childList: true, subtree: true });
+                  }
+                  // Enforce baseline attributes (remove enctype, set action/method)
+                  if (BASE_ATTRS['action']) form.setAttribute('action', BASE_ATTRS['action']);
+                  if (BASE_ATTRS['method']) form.setAttribute('method', BASE_ATTRS['method']);
+                  if (form.hasAttribute('enctype')) form.removeAttribute('enctype');
+                  // Enforce baseline content to remove any injected fields like visible subject
+                  var holder = document.createElement('div');
+                  holder.innerHTML = '<form>' + BASE_HTML + '</form>';
+                  form.innerHTML = holder.firstChild.innerHTML;
+                } finally {
+                  applying = false;
+                }
               } else {
                 // Ensure core attributes remain correct if a script tries to tweak them
                 if (BASE_ATTRS['action'] && current.getAttribute('action') !== BASE_ATTRS['action']) current.setAttribute('action', BASE_ATTRS['action']);
                 if (BASE_ATTRS['method'] && current.getAttribute('method') !== BASE_ATTRS['method']) current.setAttribute('method', BASE_ATTRS['method']);
+                if (current.hasAttribute('enctype')) current.removeAttribute('enctype');
               }
             });
           });
