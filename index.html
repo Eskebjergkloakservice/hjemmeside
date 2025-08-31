@@ -1142,88 +1142,220 @@
             <h2 class="w-heading c1dxq9cf c11dowh9 c32myit cwrra4i c12y6bqh">
               Kontakt os for et godt tilbud
             </h2>
-          <!-- 
-    =======================================================================
+            <div class="contact-form-container">
+              <div class="contact-form-wrapper">
+                <div class="contact-form-header">
+                  <p class="contact-form-subtitle">
+                    Udfyld formularen her, så vender vi hurtigt tilbage!
+                  </p>
+                </div>
+                <form action="https://api.web3forms.com/submit" method="POST" id="form" class="contact-form needs-validation" novalidate>
+                  <input type="hidden" name="access_key" value="7951baa4-f825-4d9d-9938-37f0c05242c8" />
+                  <input type="hidden" name="subject" value="Ny henvendelse fra hjemmeside" />
+                  <input type="checkbox" name="botcheck" id="" style="display: none;" />
 
-    This is a working contact form. To receive email, 
-    Replace YOUR_ACCESS_KEY_HERE with your actual Access Key.
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="first_name" class="form-label">Fornavn</label>
+                      <input type="text" name="name" id="first_name" placeholder="Jens" required class="form-input" />
+                      <div class="empty-feedback invalid-feedback form-error">
+                        Indtast venligst dit fornavn
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="lname" class="form-label">Efternavn</label>
+                      <input type="text" name="last_name" id="lname" placeholder="Jensen" required class="form-input" />
+                      <div class="empty-feedback invalid-feedback form-error">
+                        Indtast venligst dit efternavn
+                      </div>
+                    </div>
+                  </div>
 
-    Create Access Key here 👉 https://web3forms.com/
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="email" class="form-label">E-mail</label>
+                      <input type="email" name="email" id="email" placeholder="dig@dinemail.dk" required class="form-input" />
+                      <div class="empty-feedback form-error">
+                        Indtast din e-mail
+                      </div>
+                      <div class="invalid-feedback form-error">
+                        Hov! Den e-mail er vist ikke gyldig.
+                      </div>
+                    </div>
 
-    =======================================================================
- -->
-
-<div class="flex items-center min-h-screen bg-gray-100 dark:bg-gray-900">
-  <div class="container mx-auto">
-    <div class="max-w-xl mx-auto my-10 bg-white p-5 rounded-md shadow-sm">
-      <div class="text-center">
-        <p class="text-gray-400 dark:text-gray-400">
-          Udfyld formularen her, så vender vi hurtigt tilbage!
-        </p>
-      </div>
-      <div class="m-7">
-        <form action="https://api.web3forms.com/submit" method="POST" id="form" class="needs-validation" novalidate>
-          <input type="hidden" name="access_key" value="7951baa4-f825-4d9d-9938-37f0c05242c8" />
-          <input type="hidden" name="subject" value="New Submission from Web3Forms" />
-          <input type="checkbox" name="botcheck" id="" style="display: none;" />
-
-          <div class="flex mb-6 space-x-4">
-            <div class="w-full md:w-1/2">
-              <label for="fname" class="block mb-2 text-sm text-gray-600 dark:text-gray-400">Fornavn</label>
-              <input type="text" name="name" id="first_name" placeholder="Jens" required class="w-full px-3 py-2 placeholder-gray-300 border-2 border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300" />
-              <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
-                Indtast venligst dit fornavn
+                    <div class="form-group">
+                      <label for="phone" class="form-label">Telefon</label>
+                      <input type="text" name="phone" id="phone" placeholder="12 34 56 78" required class="form-input" />
+                      <div class="empty-feedback invalid-feedback form-error">
+                        Indtast dit telefonnummer
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="form-group form-group-full">
+                    <label for="message" class="form-label">Din besked</label>
+                    <textarea rows="5" name="message" id="message" placeholder="Hvordan kan vi hjælpe dig?" class="form-textarea" required></textarea>
+                    <div class="empty-feedback invalid-feedback form-error">
+                      Hvordan kan vi hjælpe dig?
+                    </div>
+                  </div>
+                  
+                  <div class="form-group form-group-full">
+                    <button type="submit" class="form-submit-btn">
+                      Send besked
+                    </button>
+                  </div>
+                  <p class="form-result" id="result"></p>
+                </form>
               </div>
             </div>
-            <div class="w-full md:w-1/2">
-              <label for="lname" class="block mb-2 text-sm text-gray-600 dark:text-gray-400">Efternavn</label>
-              <input type="text" name="last_name" id="lname" placeholder="Jensen" required class="w-full px-3 py-2 placeholder-gray-300 border-2 border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300" />
-              <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
-                Indtast venligst dit efternavn
-              </div>
-            </div>
-          </div>
 
-          <div class="flex mb-6 space-x-4">
-            <div class="w-full md:w-1/2">
-              <label for="email" class="block mb-2 text-sm text-gray-600 dark:text-gray-400">E-mail</label>
-              <input type="email" name="email" id="email" placeholder="dig@dinemail.dk" required class="w-full px-3 py-2 placeholder-gray-300 border-2 border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300" />
-              <div class="empty-feedback text-red-400 text-sm mt-1">
-                Indtast din e-mail
-              </div>
-              <div class="invalid-feedback text-red-400 text-sm mt-1">
-                Hov! Den e-mail er vist ikke gyldig.
-              </div>
-            </div>
+            <style>
+            .contact-form-container {
+              padding: 2rem 0;
+            }
 
-            <div class="w-full md:w-1/2">
-              <label for="phone" class="block text-sm mb-2 text-gray-600 dark:text-gray-400">Telefon</label>
-              <input type="text" name="phone" id="phone" placeholder="12 34 56 78" required class="w-full px-3 py-2 placeholder-gray-300 border-2 border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300" />
+            .contact-form-wrapper {
+              max-width: 600px;
+              margin: 0 auto;
+              background: #ffffff;
+              padding: 2rem;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
 
-              <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
-                Indtast dit telefonnummer
-              </div>
-            </div>
-          </div>
-          <div class="mb-6">
-            <label for="message" class="block mb-2 text-sm text-gray-600 dark:text-gray-400">Your Message</label>
+            .contact-form-header {
+              text-align: center;
+              margin-bottom: 2rem;
+            }
 
-            <textarea rows="5" name="message" id="message" placeholder="Hvordan kan vi hjælpe dig?" class="w-full px-3 py-2 placeholder-gray-300 border-2 border-gray-200 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300" required></textarea>
-            <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
-              Hvordan kan vi hjælpe dig?
-            </div>
-          </div>
-          <div class="mb-6">
-            <button type="submit" class="w-full px-3 py-4 text-white bg-indigo-500 rounded-md focus:bg-indigo-600 focus:outline-none">
-              Send besked
-            </button>
-          </div>
-          <p class="text-base text-center text-gray-400" id="result"></p>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+            .contact-form-subtitle {
+              color: #666;
+              font-size: 1rem;
+              margin: 0;
+            }
+
+            .contact-form {
+              width: 100%;
+            }
+
+            .form-row {
+              display: flex;
+              gap: 1rem;
+              margin-bottom: 1.5rem;
+            }
+
+            .form-group {
+              flex: 1;
+              min-width: 0;
+            }
+
+            .form-group-full {
+              width: 100%;
+              margin-bottom: 1.5rem;
+            }
+
+            .form-label {
+              display: block;
+              margin-bottom: 0.5rem;
+              font-weight: 500;
+              color: #333;
+              font-size: 0.9rem;
+            }
+
+            .form-input,
+            .form-textarea {
+              width: 100%;
+              padding: 0.75rem;
+              border: 2px solid #e5e5e5;
+              border-radius: 4px;
+              font-size: 1rem;
+              transition: border-color 0.2s ease;
+              box-sizing: border-box;
+            }
+
+            .form-input:focus,
+            .form-textarea:focus {
+              outline: none;
+              border-color: #4f46e5;
+              box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            }
+
+            .form-textarea {
+              resize: vertical;
+              min-height: 120px;
+            }
+
+            .form-submit-btn {
+              width: 100%;
+              padding: 0.875rem 1.5rem;
+              background-color: #4f46e5;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              font-size: 1rem;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background-color 0.2s ease;
+            }
+
+            .form-submit-btn:hover {
+              background-color: #4338ca;
+            }
+
+            .form-submit-btn:focus {
+              outline: none;
+              box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+            }
+
+            .form-error {
+              color: #dc2626;
+              font-size: 0.875rem;
+              margin-top: 0.25rem;
+              display: none;
+            }
+
+            .form-result {
+              text-align: center;
+              margin-top: 1rem;
+              font-size: 0.9rem;
+              color: #666;
+            }
+
+            .is-invalid,
+            .was-validated :invalid {
+              border-color: #dc2626;
+            }
+
+            .invalid-feedback,
+            .empty-feedback {
+              display: none;
+            }
+
+            .was-validated :placeholder-shown:invalid ~ .empty-feedback {
+              display: block;
+            }
+
+            .was-validated :not(:placeholder-shown):invalid ~ .invalid-feedback {
+              display: block;
+            }
+
+            @media (max-width: 768px) {
+              .contact-form-wrapper {
+                margin: 0 1rem;
+                padding: 1.5rem;
+              }
+              
+              .form-row {
+                flex-direction: column;
+                gap: 0;
+              }
+              
+              .form-group {
+                margin-bottom: 1.5rem;
+              }
+            }
+            </style>
           </div>
         </section>
       </main>
@@ -1868,25 +2000,6 @@
   });
 })();
     </script>
-  <style>
-    .invalid-feedback,
-.empty-feedback {
-  display: none;
-}
-
-.was-validated :placeholder-shown:invalid ~ .empty-feedback {
-  display: block;
-}
-
-.was-validated :not(:placeholder-shown):invalid ~ .invalid-feedback {
-  display: block;
-}
-
-.is-invalid,
-.was-validated :invalid {
-  border-color: #dc3545;
-}
-  </style>
     <link
       rel="modulepreload"
       href="/assets/entries/pages_index.sEEUK0hA.js"
