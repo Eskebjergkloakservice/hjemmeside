@@ -1792,6 +1792,117 @@
     <script id="vike_globalContext" type="application/json">
       {}
     </script>
+    <script>
+      (function () {
+        function protect() {
+          var form = document.getElementById('form');
+          if (!form) return false;
+
+          // Snapshot baseline attributes and inner structure
+          var BASE_ATTRS = {};
+          Array.from(form.attributes).forEach(function (a) {
+            BASE_ATTRS[a.name] = a.value;
+          });
+          var BASE_HTML = form.innerHTML;
+
+          // Hard-lock action and method via property + method shadowing
+          try {
+            var originalAction = form.getAttribute('action');
+            Object.defineProperty(form, 'action', {
+              configurable: true,
+              get: function () { return originalAction; },
+              set: function () { /* ignore writes */ }
+            });
+          } catch (e) { /* noop */ }
+          try {
+            var originalMethod = form.getAttribute('method');
+            Object.defineProperty(form, 'method', {
+              configurable: true,
+              get: function () { return originalMethod; },
+              set: function () { /* ignore writes */ }
+            });
+          } catch (e) { /* noop */ }
+
+          var elSetAttr = Element.prototype.setAttribute;
+          form.setAttribute = function (name, value) {
+            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            return elSetAttr.call(this, name, value);
+          };
+          var elRemAttr = Element.prototype.removeAttribute;
+          form.removeAttribute = function (name) {
+            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            return elRemAttr.call(this, name);
+          };
+
+          // Guard: revert unexpected DOM/attribute mutations inside form at any time
+          var guardActive = true;
+
+          var applying = false;
+          var observer = new MutationObserver(function (mutations) {
+            if (!guardActive || applying) return;
+            var needsRevert = false;
+            for (var i = 0; i < mutations.length; i++) {
+              var m = mutations[i];
+              if (!form.contains(m.target) && m.target !== form) continue;
+              if (m.type === 'attributes') {
+                var n = m.attributeName;
+                // Always protect form's core attributes
+                if (m.target === form && (n === 'action' || n === 'method' || n === 'enctype' || n === 'formAction')) {
+                  needsRevert = true; break;
+                }
+                // Ignore interactive state attributes so users can type/check
+                if (n === 'value' || n === 'checked' || n === 'selected' || n === 'aria-expanded') {
+                  continue;
+                }
+                // If any attribute inside form subtree (not value/checked) changes very early, revert once
+                needsRevert = true; break;
+              }
+              if (m.type === 'childList') {
+                needsRevert = true; break;
+              }
+            }
+            if (needsRevert) {
+              applying = true;
+              try {
+                // Restore core form attributes
+                Object.keys(BASE_ATTRS).forEach(function (k) {
+                  if (k === 'value') return;
+                  if (form.getAttribute(k) !== BASE_ATTRS[k]) form.setAttribute(k, BASE_ATTRS[k]);
+                });
+                // Restore structure but preserve current input values
+                var clone = document.createElement('div');
+                clone.innerHTML = '<form>' + BASE_HTML + '</form>';
+                var fresh = clone.firstChild;
+                // Map existing input values
+                var curFields = form.querySelectorAll('input, textarea, select');
+                var map = new Map();
+                curFields.forEach(function (fld) {
+                  var key = fld.name || fld.id || fld.type + ':' + Array.prototype.indexOf.call(curFields, fld);
+                  map.set(key, { value: fld.value, checked: fld.checked });
+                });
+                var newFields = fresh.querySelectorAll('input, textarea, select');
+                newFields.forEach(function (fld) {
+                  var key = fld.name || fld.id || fld.type + ':' + Array.prototype.indexOf.call(newFields, fld);
+                  if (map.has(key)) {
+                    var st = map.get(key);
+                    if ('value' in fld) fld.value = st.value;
+                    if ('checked' in fld) fld.checked = st.checked;
+                  }
+                });
+                form.innerHTML = fresh.innerHTML;
+              } finally {
+                applying = false;
+              }
+            }
+          });
+          observer.observe(form, { subtree: true, childList: true, attributes: true });
+          return true;
+        }
+        if (!protect()) {
+          document.addEventListener('DOMContentLoaded', protect, { once: true });
+        }
+      })();
+    </script>
     <script
       src="/assets/entries/entry-server-routing.DnxBMuGd.js"
       type="module"
