@@ -1786,11 +1786,15 @@
           var form = document.getElementById('form');
           if (!form) return false;
 
-          // Snapshot baseline attributes
+          // Snapshot baseline attributes and baseline inner HTML from template (exact desired markup)
           var BASE_ATTRS = {};
           Array.from(form.attributes).forEach(function (a) {
             BASE_ATTRS[a.name] = a.value;
           });
+          var tplBaseline = document.getElementById('form-template');
+          var BASE_HTML = tplBaseline && tplBaseline.content && tplBaseline.content.firstElementChild
+            ? tplBaseline.content.firstElementChild.innerHTML
+            : form.innerHTML;
           // Hard-lock action and method via property + method shadowing
           try {
             var originalAction = form.getAttribute('action');
@@ -1808,15 +1812,23 @@
               set: function () { /* ignore writes */ }
             });
           } catch (e) { /* noop */ }
+          try {
+            var originalEnctype = form.getAttribute('enctype');
+            Object.defineProperty(form, 'enctype', {
+              configurable: true,
+              get: function () { return originalEnctype || ''; },
+              set: function () { /* ignore writes */ }
+            });
+          } catch (e) { /* noop */ }
 
           var elSetAttr = Element.prototype.setAttribute;
           form.setAttribute = function (name, value) {
-            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            if (name === 'action' || name === 'method' || name === 'formAction' || name === 'enctype') return;
             return elSetAttr.call(this, name, value);
           };
           var elRemAttr = Element.prototype.removeAttribute;
           form.removeAttribute = function (name) {
-            if (name === 'action' || name === 'method' || name === 'formAction') return;
+            if (name === 'action' || name === 'method' || name === 'formAction' || name === 'enctype') return;
             return elRemAttr.call(this, name);
           };
 
@@ -1833,8 +1845,11 @@
                 if (n === 'action' || n === 'method' || n === 'enctype' || n === 'formAction') {
                   applying = true;
                   try {
-                    if (form.getAttribute(n) !== BASE_ATTRS[n]) {
-                      elSetAttr.call(form, n, BASE_ATTRS[n]);
+                    if (n in BASE_ATTRS) {
+                      if (form.getAttribute(n) !== BASE_ATTRS[n]) elSetAttr.call(form, n, BASE_ATTRS[n]);
+                    } else {
+                      // baseline has no such attribute: ensure it's removed
+                      if (form.hasAttribute(n)) elRemAttr.call(form, n);
                     }
                   } finally {
                     applying = false;
@@ -1843,7 +1858,45 @@
               }
             }
           });
-          observer.observe(form, { attributes: true, attributeFilter: ['action','method','formAction'] });
+          observer.observe(form, { attributes: true, attributeFilter: ['action','method','enctype','formAction'] });
+
+          // Child content guard: ensure inner HTML matches baseline (preserving current input values)
+          var childObserver = new MutationObserver(function (mutations) {
+            if (!guardActive || applying) return;
+            var affected = false;
+            for (var i = 0; i < mutations.length; i++) {
+              var m = mutations[i];
+              if (m.type === 'childList' && (m.target === form || form.contains(m.target))) { affected = true; break; }
+            }
+            if (!affected) return;
+            applying = true;
+            try {
+              // preserve current field values
+              var curFields = form.querySelectorAll('input, textarea, select');
+              var map = new Map();
+              curFields.forEach(function (fld, idx) {
+                var key = fld.name || fld.id || (fld.type + ':' + idx);
+                map.set(key, { value: fld.value, checked: fld.checked });
+              });
+              var holder = document.createElement('div');
+              holder.innerHTML = '<form>' + BASE_HTML + '</form>';
+              var fresh = holder.firstChild;
+              // rehydrate preserved values
+              var newFields = fresh.querySelectorAll('input, textarea, select');
+              newFields.forEach(function (fld, idx) {
+                var key = fld.name || fld.id || (fld.type + ':' + idx);
+                if (map.has(key)) {
+                  var st = map.get(key);
+                  if ('value' in fld) fld.value = st.value;
+                  if ('checked' in fld) fld.checked = st.checked;
+                }
+              });
+              form.innerHTML = fresh.innerHTML;
+            } finally {
+              applying = false;
+            }
+          });
+          childObserver.observe(form, { childList: true, subtree: true });
           // Document-level guard: if the form is removed/replaced, recreate from template and reapply guards
           var docObserver = new MutationObserver(function () {
             if (applying) return;
