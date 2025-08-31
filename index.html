@@ -64,6 +64,85 @@
                 /* Make links scroll to their sections smoothly. */
                 scroll-behavior: smooth;
               }
+
+              /* Modern Contact Form Styling */
+              #contactform {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 2rem;
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e7eb;
+              }
+
+              #contactform .w-element.cauqto8 {
+                width: 100%;
+                padding: 0.875rem 1rem;
+                margin-bottom: 1.5rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #ffffff;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease;
+                box-sizing: border-box;
+              }
+
+              #contactform .w-element.cauqto8:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+              }
+
+              #contactform .w-element.cauqto8::placeholder {
+                color: #9ca3af;
+                opacity: 1;
+              }
+
+              #contactform textarea.w-element.cauqto8 {
+                min-height: 120px;
+                resize: vertical;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+              }
+
+              #contactform button[type="submit"] {
+                width: 100%;
+                padding: 0.875rem 1.5rem;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                cursor: pointer;
+                transition: background-color 0.2s ease, transform 0.1s ease;
+                margin-top: 0.5rem;
+              }
+
+              #contactform button[type="submit"]:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+              }
+
+              #contactform button[type="submit"]:active {
+                transform: translateY(0);
+              }
+
+              /* Hide the botcheck input */
+              #contactform .w-element.cwvpjlf {
+                display: none;
+              }
+
+              /* Responsive adjustments */
+              @media (max-width: 640px) {
+                #contactform {
+                  margin: 1rem;
+                  padding: 1.5rem;
+                  border-radius: 12px;
+                }
+              }
             </style>
           </div>
           <header
@@ -1205,6 +1284,7 @@
                 name="message"
                 required=""
                 class="w-element cauqto8"
+                placeholder="Skriv din besked her..."
               ></textarea
               ><button type="submit" id="submit" class="w-element">
                 Send din besked
